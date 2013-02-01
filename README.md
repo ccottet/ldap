@@ -162,10 +162,15 @@ and will automagically issue the right function calls for just performing those 
 
     // Now it's gone
 
-Contribute
-============
+Resources
+=========
 
+To run the test suite, clone the project in your working environment from github
+Package your own version of autoload.php and phpunit.xml starting from the distributed versions
+You are ready to go:
 
+    $ php composer.phar install --dev
+    $ vendor/bin/phpunit
 
 About
 =====
