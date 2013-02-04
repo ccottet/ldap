@@ -28,6 +28,7 @@
             <exclude>
                 <directory>./Tests</directory>
                 <directory>./Platform/Native</directory>
+                <directory>./vendor</directory>
             </exclude>
         </whitelist>
     </filter>
