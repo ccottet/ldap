@@ -107,7 +107,7 @@ ldap_read or ldap_list or ldap_search dilemma:
     <?php
     // ... $manager connection & binding
 
-    $results = $manager->search(Search::SCOPE_ALL, 'ou=comp,dc=example,dc=com', '(objectclass=*)');
+    $results = $manager->search('ou=comp,dc=example,dc=com', '(objectclass=*)');
 
     // A search result instance is retrieved which provides iteration capability for a convenient use
 
