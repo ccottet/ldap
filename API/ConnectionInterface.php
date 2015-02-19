@@ -111,6 +111,20 @@ interface ConnectionInterface
     public function deleteEntry($dn);
 
     /**
+     * Renames an existing Ldap entry
+     *
+     * @param string $dn Distinguished name of the entry to rename
+     * @param string $newRdn Relative distinguished name to use
+     * @param string $newParent Distinguished name of the new parent node
+     * @param bool   $deleteOldRdn Remove the existing entry after
+     *
+     * @return void
+     *
+     * @throws PersistenceException if entry could not be renamed
+     */
+    public function renameEntry($dn, $newRdn, $newParent = NULL, $deleteOldRdn = TRUE);
+
+    /**
      * Adds some value(s) to some entry attribute(s)
      *
      * The data format for attributes is as follows:

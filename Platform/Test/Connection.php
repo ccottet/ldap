@@ -200,6 +200,26 @@ class Connection implements ConnectionInterface
     }
 
     /**
+     * Renames an existing Ldap entry
+     *
+     * @param string $dn Distinguished name of the entry to rename
+     * @param string $newRdn Relative distinguished name to use
+     * @param string $newParent Distinguished name of the new parent node
+     * @param bool   $deleteOldRdn Remove the existing entry after
+     *
+     * @return void
+     *
+     * @throws PersistenceException if entry could not be renamed
+     */
+    public function renameEntry($dn, $newRdn, $newParent = NULL, $deleteOldRdn = TRUE)
+    {
+        if ($this->popFailure(self::FAIL_COND_PERSIST)) {
+            throw new PersistenceException('could not delete entry');
+        }
+        $this->logPersistence('rename', $dn, array($dn, $newRdn, $newParent));
+    }
+
+    /**
      * Adds some value(s) to some entry attribute(s)
      *
      * The data format for attributes is as follows:

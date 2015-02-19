@@ -15,6 +15,7 @@ use Toyota\Component\Ldap\Core\Manager;
 use Toyota\Component\Ldap\Core\Node;
 use Toyota\Component\Ldap\Core\NodeAttribute;
 use Toyota\Component\Ldap\API\SearchInterface;
+use Toyota\Component\Ldap\Exception\RenameException;
 use Toyota\Component\Ldap\Platform\Test\Entry;
 use Toyota\Component\Ldap\Platform\Test\Search;
 use Toyota\Component\Ldap\Platform\Test\Connection;
@@ -574,4 +575,122 @@ class ManagerWriteTest extends ManagerTest
         );
         $this->assertNull($this->driver->getConnection()->shiftLog(), 'nothing else');
     }
+
+    public function testRename() {
+        $manager = new Manager($this->minimal, $this->driver);
+
+        $node = $this->buildNode('ent1', array());
+
+        $this->assertBindingFirst($manager, 'rename', array($node, 'ent1-update'));
+        $manager->connect();
+        $this->assertBindingFirst($manager, 'rename', array($node, 'ent1-update'));
+        $manager->bind();
+
+        $this->assertNull($this->driver->getConnection()->shiftLog(), 'Nothing happenned yet');
+
+        try {
+            $manager->rename($node, 'ent1-update');
+            $this->fail('This entry is not in the Ldap store');
+        }
+        catch (NodeNotFoundException $e) {
+            $this->assertRegExp('/ent1 not found/', $e->getMessage());
+        }
+        $this->assertSearchLog(
+            $this->driver->getConnection()->shiftLog(),
+            'ent1',
+            '(objectclass=*)',
+            SearchInterface::SCOPE_BASE
+        );
+        $this->assertNull($this->driver->getConnection()->shiftLog(), 'Nothing else');
+
+        // Basic rename
+        $set = array(new Entry('ent1'));
+        $this->driver->getConnection()->stackResults($set);
+
+        $manager->rename($node, 'ent1-updated');
+
+        $this->assertNull($this->driver->getConnection()->shiftResults(), 'Node got renamed');
+
+        $this->assertSearchLog(
+            $this->driver->getConnection()->shiftLog(),
+            'ent1',
+            '(objectclass=*)',
+            SearchInterface::SCOPE_BASE,
+            null,
+            $set
+        );
+        // Renamed node search
+        $this->assertSearchLog(
+            $this->driver->getConnection()->shiftLog(),
+            'ent1',
+            '(objectclass=*)',
+            SearchInterface::SCOPE_ONE
+        ); // Renamed node children search
+        $this->assertActionLog(
+            $this->driver->getConnection()->shiftLog(),
+            'rename',
+            'ent1',
+            array('ent1', 'ent1-updated', '')
+        );
+        $this->assertNull($this->driver->getConnection()->shiftLog(), 'nothing else');
+
+        /**
+         *
+         */
+        /**
+         *
+         */
+        // Rename does not search for the entry if the node is already hydrated
+        $node =new Node();
+        $node->hydrateFromEntry(new Entry('ent1', array()));
+        $this->assertNull($this->driver->getConnection()->shiftResults(), 'No node in the stack');
+        $manager->rename($node, 'ent1-updated');
+        $this->assertSearchLog(
+            $this->driver->getConnection()->shiftLog(),
+            'ent1',
+            '(objectclass=*)',
+            SearchInterface::SCOPE_ONE
+        ); // Only one children search
+        $this->assertActionLog(
+            $this->driver->getConnection()->shiftLog(),
+            'rename',
+            'ent1',
+            array('ent1', 'ent1-updated', '')
+        );
+        $this->assertNull($this->driver->getConnection()->shiftLog(), 'nothing else');
+
+        // Exception with node children and no recursion configured
+        $node = $this->buildNode('ref', array());
+        $sets   = array();
+        $sets[] = array(new Entry('ref'));
+        $sets[] = array(new Entry('a-ref'), new Entry('b-ref'), new Entry('c-ref'));
+        $this->driver->getConnection()->stackResults($sets[0]); // The node we want to delete
+        $this->driver->getConnection()->stackResults($sets[1]); // Search for children nodes
+
+        try {
+            $manager->rename($node, 'ref-updated');
+            $this->fail('Cannot rename the node, it has children');
+        } catch (RenameException $e) {
+            $this->assertRegExp('/ref cannot be renamed/', $e->getMessage());
+            $this->assertRegExp('/it has some children left/', $e->getMessage());
+        }
+        $this->assertSearchLog(
+            $this->driver->getConnection()->shiftLog(),
+            'ref',
+            '(objectclass=*)',
+            SearchInterface::SCOPE_BASE,
+            null,
+            $sets[0]
+        );
+        $this->assertSearchLog(
+            $this->driver->getConnection()->shiftLog(),
+            'ref',
+            '(objectclass=*)',
+            SearchInterface::SCOPE_ONE,
+            null,
+            $sets[1]
+        );
+        $this->assertNull($this->driver->getConnection()->shiftLog(), 'nothing else');
+    }
+
 }

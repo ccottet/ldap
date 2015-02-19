@@ -195,6 +195,9 @@ class ConnectionTest extends TestCase
         $connection->replaceAttributeValues('test', array('attr1', 'attr4'));
         $connection->deleteAttributeValues('test', array());
 
+        $connection->addEntry('test', array('data'));
+        $connection->renameEntry('test', 'testUpdated');
+
         $this->assertActionLog($connection->shiftLog(), 'create', 'dn0', array('other', 'data'));
         $this->assertActionLog($connection->shiftLog(), 'delete', 'dn1');
         $this->assertActionLog($connection->shiftLog(), 'attr_add', 'dn2', array('attr1', 'attr2'));
@@ -205,6 +208,8 @@ class ConnectionTest extends TestCase
         $this->assertActionLog($connection->shiftLog(), 'attr_add', 'test', array('attr0'));
         $this->assertActionLog($connection->shiftLog(), 'attr_rep', 'test', array('attr1', 'attr4'));
         $this->assertActionLog($connection->shiftLog(), 'attr_del', 'test', array());
+        $this->assertActionLog($connection->shiftLog(), 'create', 'test', array('data'));
+        $this->assertActionLog($connection->shiftLog(), 'rename', 'test', array('test', 'testUpdated', NULL));
         $this->assertNull($connection->shiftLog(), 'No more logs available');
     }
 
