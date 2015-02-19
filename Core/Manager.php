@@ -19,6 +19,7 @@ use Toyota\Component\Ldap\Exception\NotBoundException;
 use Toyota\Component\Ldap\Exception\PersistenceException;
 use Toyota\Component\Ldap\Exception\DeleteException;
 use Toyota\Component\Ldap\Core\Node;
+use Toyota\Component\Ldap\Exception\RenameException;
 
 /**
  * Class to handle Ldap operations
@@ -326,6 +327,34 @@ class Manager
 
         $node->snapshot();
         return false;
+    }
+
+    /**
+     * Rename an existing node
+     *
+     * @param Node $node Node to be moved (must still have old DN)
+     *
+     * @param string $newDn Distinguished name to move the entry to
+     *
+     * @param $newDn
+     */
+    public function rename(Node $node, $newDn)
+    {
+        if (! $node->isHydrated()) {
+            $node = $this->getNode($node->getDn());
+        }
+        $children = $this->getChildrenNodes($node);
+        if (count($children) > 0) {
+            throw new RenameException(
+                sprintf('%s cannot be renamed - it has some children left', $node->getDn())
+            );
+        }
+
+        $newDnParts = explode(',', $newDn);
+        $newRdn = array_shift($newDnParts);
+        $newParent = implode(',', $newDnParts);
+
+        $this->connection->renameEntry($node->getDn(), $newRdn, $newParent, FALSE);
     }
 
     /**
