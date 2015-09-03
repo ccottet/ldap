@@ -90,7 +90,7 @@ Hence, for instance, you can write the following:
 
     try {
         $manager->bind();
-    } catch (BindingException $e) {
+    } catch (BindException $e) {
         // Do something about it
     }
 
