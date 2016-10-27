@@ -243,6 +243,26 @@ class Connection implements ConnectionInterface
     }
 
     /**
+     * Change Node's password (a LDAP user)
+     *
+     * @param string $dn          Distinguished name of the entry to modify
+     * @param string $newpassword Node's new password
+     *
+     * @return void
+     *
+     * @throws PersistenceException if entry could not be updated
+     */
+    public function changePassword($dn, $newpassword)
+    {
+        if (ldap_modify($this->connection, $dn, ['userPassword' => "$newpassword"]) === false){
+            $errno = ldap_errno($this->connection);
+            $message = 'Error changing password (' . $errno . ')';
+            
+            throw new PersistenceException($message);
+        }
+    }
+
+    /**
      * Replaces value(s) for some entry attribute(s)
      *
      * The data format for attributes is as follows:

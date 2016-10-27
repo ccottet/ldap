@@ -329,6 +329,43 @@ class Manager
     }
 
     /**
+     * Change Node's password (a LDAP user)
+     *
+     * @param Node $node          Node to be changed
+     * @param string $password    Node's (LDAP user) password
+     * @param string $newpassword Node's new password
+     *
+     * @return void
+     *
+     * @throws PersistenceException  if entry could not be updated
+     * @throws NodeNotFoundException if Node not found
+     */
+    public function changePassword(Node $node, $password, $newpassword)
+    {
+        $this->validateBinding();
+        if (strlen(trim($node->getDn())) == 0) {
+            throw new PersistenceException('Cannot change password: dn missing for the entry');
+        }
+
+        if (!$node->isHydrated()) {
+            try {
+                $origin = $this->getNode($node->getDn());
+                $node->rebaseDiff($origin);
+            } catch(NodeNotFoundException $e) {
+                $this->connection->addEntry($node->getDn(), $node->getRawAttributes());
+                $node->snapshot();
+            }
+        }
+        
+        // New bindindg with Node's parameters (user and password)
+        $this->bind($node->getDn(), $password);
+        $this->validateBinding();
+        
+        $encodedNewPassword = "{SHA}" . base64_encode(pack("H*", sha1($_POST['newpassword'])));
+        $this->connection->changePassword($node->getDn(), $encodedNewPassword);
+    }
+
+    /**
      * Retrieves immediate children for the given node
      *
      * @param Node $node Node to retrieve children for
